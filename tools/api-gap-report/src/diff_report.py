@@ -15,6 +15,7 @@ class DiffReport(DiffCommon, DiffApiParser, DiffTfParser):
         self._cmd_input = self.diff_cmdline().parse_args()
         self.component = self._cmd_input.component
         self.tf_config_path = self._cmd_input.terraform_config
+        self.beta = self._cmd_input.beta
         self.old_yaml_report_path = self._cmd_input.diff_report
         self.save_file = self._cmd_input.save_file
         self.verbose = self._cmd_input.verbose
@@ -118,7 +119,7 @@ class DiffReport(DiffCommon, DiffApiParser, DiffTfParser):
         return mapped_field
 
     def _save_new_report(self, api_implemented, api_missing, tf_specific,
-                         excluded):
+                         excluded, beta=False):
         """
         Saves the generated difference report to a YAML file.
 
@@ -144,7 +145,8 @@ class DiffReport(DiffCommon, DiffApiParser, DiffTfParser):
             "excluded": excluded,
         }
 
-        file_name = f"{self.component}_diff_report_{round(time.time())}.yaml"
+        file_name = (f"{self.component}_{'beta_' if beta else ''}diff_report_"
+                     f"{round(time.time())}.yaml")
         self.log.debug(
             f"Saving {self.component} schema to json file {file_name}"
         )
@@ -212,7 +214,8 @@ class DiffReport(DiffCommon, DiffApiParser, DiffTfParser):
             exit(1)
 
         self.log.info(f"Getting {self.component} API Schema")
-        if not self.get_api_component_schema(self.component, self.save_file):
+        if not self.get_api_component_schema(self.component, self.save_file,
+                                             self.beta):
             self.log.error(
                 f"Cannot get API {self.component} schema! Exiting..."
             )
@@ -229,7 +232,8 @@ class DiffReport(DiffCommon, DiffApiParser, DiffTfParser):
             exit(1)
 
         self.log.info(f"Getting {self.component} Terraform Schema")
-        if not self.get_tf_component_schema(self.component, self.save_file):
+        if not self.get_tf_component_schema(self.component, self.save_file,
+                                            self.beta):
             self.log.error(
                 f"Cannot get Terraform {self.component} schema! Exiting..."
             )
@@ -308,7 +312,7 @@ class DiffReport(DiffCommon, DiffApiParser, DiffTfParser):
         os.chdir(self.cwd)
 
         if not self._save_new_report(api_implemented, api_missing, tf_specific,
-                                     excluded):
+                                     excluded, beta=self.beta):
             self.log.error(f"Cannot create new diff {self.component} report! "
                            "Exiting...")
             os.chdir(self.cwd)

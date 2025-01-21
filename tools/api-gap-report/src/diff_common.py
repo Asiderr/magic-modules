@@ -34,6 +34,12 @@ class DiffCommon:
             required=True
         )
         parser.add_argument(
+            "-b",
+            "--beta",
+            action="store_true",
+            help="Use beta provider when parsing Terraform and API schemas"
+        )
+        parser.add_argument(
             "-d",
             "--diff_report",
             help=(

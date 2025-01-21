@@ -6,11 +6,11 @@ import requests
 import os
 import time
 
-from diff_config import DISCOVERY_DOC_URL
+from diff_config import DISCOVERY_DOC_URL, DISCOVERY_DOC_URL_BETA
 
 
 class DiffApiParser:
-    def _get_api_schemas(self):
+    def _get_api_schemas(self, beta=False):
         """
         Retrieves and processes the API schemas from the discovery document.
 
@@ -26,10 +26,15 @@ class DiffApiParser:
             print("Error: Logger not found!")
             return False
 
+        if beta:
+            discovery_doc = DISCOVERY_DOC_URL_BETA
+        else:
+            discovery_doc = DISCOVERY_DOC_URL
+
         self.log.debug(
-            f"Trying to get discovery doc from: {DISCOVERY_DOC_URL}"
+            f"Trying to get discovery doc from: {discovery_doc}"
         )
-        discovery_response = requests.get(DISCOVERY_DOC_URL)
+        discovery_response = requests.get(discovery_doc)
         try:
             self.log.debug("Trying to decode JSON file")
             ref_api_schemas = discovery_response.json()
@@ -45,7 +50,7 @@ class DiffApiParser:
             self.log.debug("Trying to dereference API schemas")
             self._api_schemas = jsonref.JsonRef.replace_refs(
                 ref_api_schemas,
-                base_uri=DISCOVERY_DOC_URL,
+                base_uri=discovery_doc,
                 jsonschema=True
             ).get("schemas", {})
         except jsonref.JsonRefError:
@@ -57,7 +62,7 @@ class DiffApiParser:
 
         return True
 
-    def get_api_component_schema(self, component, save_file=False):
+    def get_api_component_schema(self, component, save_file=False, beta=False):
         """
         Retrieves the API schema for a specified component and optionally
         saves it to a file.
@@ -67,6 +72,8 @@ class DiffApiParser:
                              is to be retrieved.
             save_file (bool, optional): If `True`, the schema is saved to
                                         a JSON file. Defaults to `False`.
+            beta (bool, optional): If `True`, use beta provider when parsing
+                                   Terraform and API schemas.
 
         Returns:
             bool:
@@ -83,7 +90,7 @@ class DiffApiParser:
             print("Error: Current directory not set!")
             return False
 
-        if not self._get_api_schemas():
+        if not self._get_api_schemas(beta=beta):
             self.log.error("Cannot get GCP API schemas!")
             return False
 
@@ -96,7 +103,8 @@ class DiffApiParser:
         if save_file:
             file_name = os.path.join(
                 self.cwd,
-                f"{component}_api_schema_{round(time.time())}.json"
+                (f"{component}_api_{'beta_' if beta else ''}schema_"
+                 f"{round(time.time())}.json")
             )
             self.log.debug(
                 f"Saving {component} schema to json file {file_name}"

@@ -129,7 +129,7 @@ class DiffTfParser:
         else:
             return schema
 
-    def get_tf_component_schema(self, component, save_file=False):
+    def get_tf_component_schema(self, component, save_file=False, beta=False):
         """
         Retrieves and processes the Terraform schema for a specific component.
 
@@ -140,6 +140,8 @@ class DiffTfParser:
             save_file (bool, optional): If `True`, the retrieved schema will
                                         be saved to a JSON file. Defaults to
                                         `False`.
+            beta (bool, optional): If `True`, use beta provider when parsing
+                                   Terraform and API schemas.
 
         Returns:
             bool: Returns `True` if the schema retrieval and processing were
@@ -157,11 +159,16 @@ class DiffTfParser:
             self.log.error("Cannot get Terraform schemas!")
             return False
 
+        if beta:
+            provider = "registry.terraform.io/hashicorp/google-beta"
+        else:
+            provider = "registry.terraform.io/hashicorp/google"
+
         try:
             self.component_tf_schema = self._snake_to_camel_schema(
                 self.terraform_schemas[
                     "provider_schemas"][
-                    "registry.terraform.io/hashicorp/google"][
+                    provider][
                     "resource_schemas"][
                     f"google_compute_{self._camel_to_snake_string(component)}"]
             )
@@ -172,7 +179,8 @@ class DiffTfParser:
         if save_file:
             file_name = os.path.join(
                 self.cwd,
-                f"{component}_terraform_schema_{round(time.time())}.json"
+                (f"{component}_terraform_{'beta_' if beta else ''}schema_"
+                 f"{round(time.time())}.json")
             )
             self.log.debug(
                 f"Saving {component} schema to json file {file_name}"
