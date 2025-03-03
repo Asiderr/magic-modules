@@ -49,6 +49,19 @@
  &lt;a class="anchor" href="#review-a-pull-request">#&lt;/a>
 &lt;/h1>
 &lt;p>This page provides guidelines for reviewing a Magic Modules pull request (PR).&lt;/p>
+&lt;h2 id="special-cases">
+ Special cases
+ &lt;a class="anchor" href="#special-cases">#&lt;/a>
+&lt;/h2>
+&lt;p>The following types of PRs may require additional scrutiny and/or multiple reviewers.&lt;/p>
+&lt;ul>
+&lt;li>DCL to MMv1 migrations&lt;/li>
+&lt;li>Adding multi-actor fields (fields whose values can be altered as a side effect of changes made to a different resource)&lt;/li>
+&lt;/ul>
+&lt;h2 id="review">
+ Review
+ &lt;a class="anchor" href="#review">#&lt;/a>
+&lt;/h2>
 &lt;ol>
 &lt;li>Read the PR description to understand the context and ensure the PR either
 &lt;ul>
@@ -103,7 +116,6 @@ Presubmit VCR tests do not run in GA. Manual testing is required for promoted GA
 &lt;li>all related PR presubmit tests have been completed successfully, including:
 &lt;ul>
 &lt;li>terraform-provider-breaking-change-test&lt;/li>
-&lt;li>presubmit-rake-tests&lt;/li>
 &lt;li>terraform-provider-google-build-and-unit-tests&lt;/li>
 &lt;li>terraform-provider-google-beta-build-and-unit-tests&lt;/li>
 &lt;li>VCR-test
