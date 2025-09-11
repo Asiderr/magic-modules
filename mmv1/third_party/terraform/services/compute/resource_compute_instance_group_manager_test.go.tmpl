@@ -548,6 +548,31 @@ func TestAccInstanceGroupManager_addingResourcePoliciesToMigWithNonZeroTargetSiz
 	})
 }
 
+{{ if ne $.TargetVersionName `ga` -}}
+func TestAccInstanceGroupManager_addingTargetSizePolicy(t *testing.T) {
+	t.Parallel()
+
+	suffix := acctest.RandString(t, 10)
+
+	acctest.VcrTest(t, resource.TestCase{
+		PreCheck:                 func() { acctest.AccTestPreCheck(t) },
+		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories(t),
+		CheckDestroy:             testAccCheckInstanceGroupManagerDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccInstanceGroupManager_withTargetSizePolicy(suffix),
+			},
+			{
+				ResourceName:            "google_compute_instance_group_manager.igm-workload-policy",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"status"},
+			},
+		},
+	})
+}
+{{- end }}
+
 func TestAccInstanceGroupManager_resourcePoliciesWorkloadPolicyUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -2157,6 +2182,56 @@ resource "google_compute_instance_group_manager" "igm-workload-policy" {
 }
 `, suffix, suffix)
 }
+
+{{ if ne $.TargetVersionName `ga` -}}
+func testAccInstanceGroupManager_withTargetSizePolicy(suffix string) string {
+	return fmt.Sprintf(`
+data "google_compute_image" "my_image" {
+  family  = "debian-11"
+  project = "debian-cloud"
+}
+
+resource "google_compute_instance_template" "igm-basic" {
+  name           = "igm-instance-template-%s"
+  machine_type   = "a4-highgpu-8g"
+  can_ip_forward = false
+  tags           = ["foo", "bar"]
+
+  disk {
+    source_image = data.google_compute_image.my_image.self_link
+    auto_delete  = true
+    boot         = true
+    disk_type    = "hyperdisk-balanced"
+  }
+
+  network_interface {
+    network = "default"
+  }
+
+  service_account {
+    scopes = ["userinfo-email", "compute-ro", "storage-ro"]
+  }
+}
+
+resource "google_compute_instance_group_manager" "igm-workload-policy" {
+  description = "Terraform test instance group manager"
+  name        = "igm-basic-workload-policy-%s"
+
+  version {
+    name              = "prod"
+    instance_template = google_compute_instance_template.igm-basic.self_link
+  }
+
+  base_instance_name = "tf-test-igm-no-tp"
+  zone               = "us-central1-b"
+  target_size        = 2
+  target_size_policy {
+    mode = "BULK"
+  }
+}
+`, suffix, suffix)
+}
+{{- end }}
 
 func testAccInstanceGroupManager_resourcePoliciesWorkloadPolicyUpdateError(suffix string) string {
 	return fmt.Sprintf(`
